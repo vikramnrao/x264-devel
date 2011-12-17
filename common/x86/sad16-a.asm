@@ -29,6 +29,7 @@
 SECTION .text
 
 cextern pw_1
+cextern pw_8
 
 ;=============================================================================
 ; SAD MMX
@@ -469,3 +470,77 @@ SAD_X 4, 16,  8
 SAD_X 4,  8, 16
 SAD_X 4,  8,  8
 SAD_X 4,  8,  4
+
+;-----------------------------------------------------------------------------
+; void intra_sad_x3_8x8( pixel *fenc, pixel edge[36], int res[3]);
+;-----------------------------------------------------------------------------
+
+;m0 = DC
+;m6 = V
+;m7 = H
+;m1 = DC score
+;m2 = V score
+;m3 = H score
+;m5 = temp
+;m4 = pixel row
+
+%macro INTRA_SAD_HVDC_ITER 3
+    mova        m4, [r0+FENC_STRIDEB*%1]
+    psubw       m4, m0
+    ABSW        m4, m4, m5
+%if %1
+    paddw       m1, m4
+%else
+    SWAP        1, 4
+%endif
+    mova        m4, [r0+FENC_STRIDEB*%1]
+    psubw       m4, m6
+    ABSW        m4, m4, m5
+%if %1
+    paddw       m2, m4
+%else
+    SWAP        2, 4
+%endif
+    mova        m4, [r0+FENC_STRIDEB*%1]
+    pshuf%3w    m5, m7, %2
+    punpck%3qdq m5, m5 
+    psubw       m5, m4
+    ABSW        m5, m5, m4
+%if %1
+    paddw       m3, m5
+%else
+    SWAP        3, 5
+%endif
+%endmacro
+
+%macro INTRA_SAD_X3_8x8 0
+cglobal intra_sad_x3_8x8, 3,3,8
+    movu        m0, [r1+7*SIZEOF_PIXEL]
+    mova        m6, [r1+16*SIZEOF_PIXEL] ;V prediction
+    mova        m7, m0
+    paddw       m0, m6
+    HADDW       m0, m4
+    paddw       m0, [pw_8] 
+    psrlw       m0, 4
+    SPLATW      m0, m0 
+    INTRA_SAD_HVDC_ITER 0, q3333, h
+    INTRA_SAD_HVDC_ITER 1, q2222, h
+    INTRA_SAD_HVDC_ITER 2, q1111, h
+    INTRA_SAD_HVDC_ITER 3, q0000, h
+    INTRA_SAD_HVDC_ITER 4, q3333, l
+    INTRA_SAD_HVDC_ITER 5, q2222, l
+    INTRA_SAD_HVDC_ITER 6, q1111, l
+    INTRA_SAD_HVDC_ITER 7, q0000, l
+    HADDW       m2, m4
+    HADDW       m3, m4
+    HADDW       m1, m4
+    movd        [r2+0], m2
+    movd        [r2+4], m3
+    movd        [r2+8], m1
+    RET
+%endmacro
+
+INIT_XMM sse2
+INTRA_SAD_X3_8x8
+INIT_XMM ssse3
+INTRA_SAD_X3_8x8

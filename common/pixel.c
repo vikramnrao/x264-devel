@@ -522,8 +522,6 @@ INTRA_MBCMP_8x8( sad,, _c )
 INTRA_MBCMP_8x8(sa8d,, _c )
 #if HIGH_BIT_DEPTH && HAVE_MMX
 INTRA_MBCMP_8x8( sad, _mmx2,  _c )
-INTRA_MBCMP_8x8( sad, _sse2,  _sse2 )
-INTRA_MBCMP_8x8( sad, _ssse3, _sse2 )
 INTRA_MBCMP_8x8(sa8d, _sse2,  _sse2 )
 #endif
 
@@ -872,6 +870,7 @@ void x264_pixel_init( int cpu, x264_pixel_function_t *pixf )
         pixf->var[PIXEL_8x8]   = x264_pixel_var_8x8_sse2;
         pixf->var2[PIXEL_8x8]  = x264_pixel_var2_8x8_sse2;
         pixf->var2[PIXEL_8x16] = x264_pixel_var2_8x16_sse2;
+        pixf->intra_sad_x3_8x8 = x264_intra_sad_x3_8x8_sse2;
     }
     if( (cpu&X264_CPU_SSE2) && !(cpu&X264_CPU_SSE2_IS_SLOW) )
     {

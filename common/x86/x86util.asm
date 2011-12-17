@@ -272,7 +272,7 @@
     paddd   %1, %2
 %endmacro
 
-%macro HADDW 2
+%macro HADDW 2 ; reg, tmp
 %if cpuflag(xop) && mmsize == 16
     vphaddwq  %1, %1
     movhlps   %2, %1
